@@ -1,28 +1,57 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Navbar } from './components/Layout/Navbar';
-import { HomePage } from './pages/HomePage';
-import { ListingsPage } from './pages/ListingsPage';
-import { PropertyDetailPage } from './pages/PropertyDetailPage';
-import { FavoritesPage } from './pages/FavoritesPage';
-import { DashboardPage } from './pages/DashboardPage';
+import React, { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
+import { Navbar } from "./components/Layout/Navbar";
+import { HomePage } from "./pages/HomePage";
+import { ListingsPage } from "./pages/ListingsPage";
+import { PropertyDetailPage } from "./pages/PropertyDetailPage";
+import { FavoritesPage } from "./pages/FavoritesPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { WalletModal } from "./components/Layout/WalletModal";
+import { connectMetaMask, isMetaMaskInstalled } from "./services/walletService";
 
 const AppContent: React.FC = () => {
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [favorites, setFavorites] = useState(['1', '4']);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState(["1", "4"]);
   const navigate = useNavigate();
 
-  const handleConnectWallet = () => {
-    // Mock wallet connection with animation
-    setTimeout(() => {
-      setWalletConnected(!walletConnected);
-    }, 1000);
+  const openWalletModal = () => setIsModalOpen(true);
+  const closeWalletModal = () => setIsModalOpen(false);
+
+  const handleConnectWallet = async () => {
+    setError(null);
+    try {
+      if (!isMetaMaskInstalled()) {
+        
+       
+        setError(
+          "MetaMask not installed. Please install it: https://metamask.io/"
+        );
+        return;
+      }
+
+      const account = await connectMetaMask();
+      setWalletAddress(account);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      if (err.message.includes("User rejected")) {
+        setError("Connection request rejected.");
+      } else {
+        setError(err.message || "Failed to connect wallet");
+      }
+    }
   };
 
   const handleToggleFavorite = (propertyId: string) => {
-    setFavorites(prev => 
+    setFavorites((prev) =>
       prev.includes(propertyId)
-        ? prev.filter(id => id !== propertyId)
+        ? prev.filter((id) => id !== propertyId)
         : [...prev, propertyId]
     );
   };
@@ -33,52 +62,59 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Navbar 
-        onConnectWallet={handleConnectWallet}
-        walletConnected={walletConnected}
+      <Navbar onConnectWallet={openWalletModal} walletAddress={walletAddress} />
+
+      <WalletModal
+        isOpen={isModalOpen}
+        onClose={closeWalletModal}
+        onConnect={handleConnectWallet}
+        walletAddress={walletAddress}
+        error={error}
       />
-      
+
       <Routes>
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            <HomePage 
+            <HomePage
               onToggleFavorite={handleToggleFavorite}
               onPropertyClick={handlePropertyClick}
             />
-          } 
+          }
         />
-        <Route 
-          path="/listings" 
+        <Route
+          path="/listings"
           element={
-            <ListingsPage 
+            <ListingsPage
               onToggleFavorite={handleToggleFavorite}
               onPropertyClick={handlePropertyClick}
             />
-          } 
+          }
         />
-        <Route 
-          path="/property/:id" 
-          element={<PropertyDetailPage onToggleFavorite={handleToggleFavorite} />} 
-        />
-        <Route 
-          path="/favorites" 
+        <Route
+          path="/property/:id"
           element={
-            <FavoritesPage 
+            <PropertyDetailPage onToggleFavorite={handleToggleFavorite} />
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <FavoritesPage
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
               onPropertyClick={handlePropertyClick}
             />
-          } 
+          }
         />
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
-            <DashboardPage 
-              walletConnected={walletConnected}
-              onConnectWallet={handleConnectWallet}
+            <DashboardPage
+              walletConnected={!!walletAddress}
+              onConnectWallet={connectMetaMask}
             />
-          } 
+          }
         />
       </Routes>
     </>

@@ -4,13 +4,15 @@ import { Home, Search, Heart, User, Wallet } from 'lucide-react';
 
 interface NavbarProps {
   onConnectWallet: () => void;
-  walletConnected: boolean;
+  walletAddress: string | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onConnectWallet, walletConnected }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onConnectWallet, walletAddress }) => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
+    const shorten = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
 
   return (
     <nav className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 transition-all duration-300">
@@ -73,15 +75,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onConnectWallet, walletConnected
           <div className="flex items-center space-x-4">
             <button
               onClick={onConnectWallet}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                walletConnected
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : 'bg-gradient-to-r from-blue-600 to-emerald-500 text-white hover:from-blue-700 hover:to-emerald-600 shadow-lg hover:shadow-xl transform hover:scale-105'
-              }`}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-emerald-500 text-white hover:from-blue-700 hover:to-emerald-600 transition-all"
             >
               <Wallet className="w-4 h-4" />
               <span className="hidden sm:block">
-                {walletConnected ? 'Wallet Connected' : 'Connect Wallet'}
+                {walletAddress ? shorten(walletAddress) : "Connect Wallet"}
               </span>
             </button>
           </div>
